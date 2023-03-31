@@ -1,13 +1,14 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Camera } from 'expo-camera';
 import { TesseractOcr, TesseractLang } from 'react-native-tesseract-ocr';
 
-const App = () => {
+export default function App() {
+  const [cameraReady, setCameraReady] = useState(false);
   const cameraRef = useRef(null);
 
   const takePicture = async () => {
-    if (cameraRef.current) {
+    if (cameraReady && cameraRef.current) {
       const options = { quality: 0.5, base64: true };
       const data = await cameraRef.current.takePictureAsync(options);
 
@@ -21,9 +22,18 @@ const App = () => {
     }
   };
 
+  const onCameraReady = () => {
+    setCameraReady(true);
+  };
+
   return (
     <View style={styles.container}>
-      <Camera ref={cameraRef} style={styles.camera}>
+      <Camera
+        ref={cameraRef}
+        style={styles.camera}
+        type={Camera.Constants.Type.back}
+        onCameraReady={onCameraReady}
+      >
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.button} onPress={takePicture}>
             <Text style={styles.buttonText}>Take Picture</Text>
@@ -32,12 +42,11 @@ const App = () => {
       </Camera>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: 'column',
     backgroundColor: '#000',
   },
   camera: {
@@ -61,5 +70,3 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
 });
-
-export default App;
