@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Camera } from 'expo-camera';
 import { TesseractOcr, TesseractLang } from 'react-native-tesseract-ocr';
@@ -7,13 +7,20 @@ export default function App() {
   const [cameraReady, setCameraReady] = useState(false);
   const cameraRef = useRef(null);
 
-  const takePicture = async () => {
-    if (cameraReady && cameraRef.current) {
-      const options = { quality: 0.5, base64: true };
-      const data = await cameraRef.current.takePictureAsync(options);
+  useEffect(() => {
+    (async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Sorry, we need camera permissions to make this work!');
+      }
+    })();
+  }, []);
 
+  const handlePictureTaken = async () => {
+    if (cameraRef.current) {
+      const photo = await cameraRef.current.takePictureAsync();
       const ocrResult = await TesseractOcr.recognize(
-        data.uri,
+        photo.uri,
         TesseractLang.ENG,
         {},
       );
@@ -22,24 +29,23 @@ export default function App() {
     }
   };
 
-  const onCameraReady = () => {
-    setCameraReady(true);
-  };
-
   return (
     <View style={styles.container}>
       <Camera
-        ref={cameraRef}
         style={styles.camera}
         type={Camera.Constants.Type.back}
-        onCameraReady={onCameraReady}
-      >
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={takePicture}>
-            <Text style={styles.buttonText}>Take Picture</Text>
-          </TouchableOpacity>
-        </View>
-      </Camera>
+        onCameraReady={() => setCameraReady(true)}
+        ref={cameraRef}
+      />
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          onPress={handlePictureTaken}
+          style={[styles.button, !cameraReady && styles.disabledButton]}
+          disabled={!cameraReady}
+        >
+          <Text style={styles.buttonText}>Take Picture</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -47,26 +53,30 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   camera: {
     flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    aspectRatio: 1,
   },
   buttonContainer: {
-    flex: 0.1,
-    backgroundColor: 'transparent',
-    flexDirection: 'row',
-    alignSelf: 'flex-end',
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   button: {
-    backgroundColor: '#fff',
-    borderRadius: 5,
+    backgroundColor: '#ccc',
     padding: 10,
-    margin: 20,
+    borderRadius: 5,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   buttonText: {
     fontSize: 20,
+    fontWeight: 'bold',
   },
 });
